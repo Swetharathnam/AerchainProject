@@ -1,0 +1,189 @@
+SDE Assignment – AI-Powered RFP Management System
+1. Context
+Many companies run procurement through Requests for Proposal (RFPs): they define what they want to buy, 
+email that out to multiple vendors, collect responses (often messy emails and attachments), and then 
+someone manually compares all the quotes to decide who to award the work to.
+This process is:
+●
+●
+●
+Slow and error-prone
+Full of unstructured data (emails, PDFs, free-form descriptions)
+Repetitive: similar RFPs, similar evaluations, similar comparisons
+We want to explore how you would design and build an AI-powered RFP management system that 
+streamlines this workflow end-to-end.
+2. Problem Statement
+Design and implement a single-user web application that helps a procurement manager:
+1.
+2.
+3.
+4.
+Create RFPs
+a.
+b.
+c.
+A user should be able to describe what they want to buy in natural language.
+Your system should turn this into a structured representation of an RFP that can be reused 
+throughout the workflow (for sending to vendors, storing in a database, comparison, etc.).
+Example chat interaction for RFP creation: "I need to procure laptops and monitors for our new office. 
+Budget is $50,000 total. Need delivery within 30 days. We need 20 laptops with 16GB RAM and 15 
+monitors 27-inch. Payment terms should be net 30, and we need at least 1 year warranty."
+Manage vendors and send RFPs
+a.
+b.
+c.
+Maintain some form of vendor master data (who the vendors are and how to contact them).
+Allow the user to choose which vendors to send an RFP to.
+Send the RFP to vendors via email.
+Receive and interpret vendor responses
+a.
+b.
+c.
+a.
+Support inbound email, where vendors reply with their proposals.
+Vendor responses can be messy: free-form text, tables, maybe attachments, etc.
+Use AI to extract the important details from these responses (e.g. prices, terms, conditions) and 
+update your system automatically, without the user manually keying in each number.
+Compare proposals and recommend a vendor
+For a given RFP, show how different vendors compare (e.g. pricing, terms, completeness of 
+response).
+b.
+Use AI to help the user evaluate: summaries, scores, or recommendations are all acceptable.
+c.
+The system should help the user answer: “Which vendor should I go with, and why?”
+You are free to choose:
+●
+●
+●
+●
+How you structure an “RFP” internally (fields, schema, etc.).
+How the UI/UX looks (chat-like, forms, wizards, dashboards, etc.).
+How you design the scoring / comparison logic.
+Which AI provider / model(s) you use and how you prompt them.
+We care much more about your decisions and reasoning than about matching any specific reference 
+implementation.
+3. Requirements & Expectations
+Functional (high-level)
+At a minimum, your solution should demonstrate:
+●
+●
+●
+●
+●
+A way to create and view structured RFPs driven by natural language input
+Basic vendor management (store vendors, pick them for an RFP)
+Email sending of RFPs to selected vendors
+Email receiving of at least one vendor response, and automatic parsing of that response with AI
+A comparison view for proposals for a given RFP, with some form of AI-assisted evaluation or 
+recommendation
+How you achieve each of these is up to you.
+Technology
+●
+●
+●
+Use a modern web stack.
+○
+Suggested: React (frontend) and Node.js with Express (backend), but you may choose differently if 
+you explain why in the README.
+Use a database of your choice to persist data (e.g. PostgreSQL, MongoDB, etc.).
+Integrate with a real email system for send + receive. This can be via SMTP, IMAP, or any email 
+API/service.
+AI Integration
+Use an LLM (OpenAI / Anthropic / etc.) for at least:
+●
+●
+●
+Turning natural language procurement needs into some structured representation of an RFP
+Parsing vendor responses (email body and/or attachments) into structured data
+Helping with proposal comparison and/or recommendations (e.g. explanations, summaries, scores)
+You decide where and how heavily to use AI, and how you design prompts / flows.
+Non-Goals (Out of Scope)
+You do not need to implement:
+●
+●
+●
+●
+User authentication / multi-tenant support
+Real-time collaboration
+Email tracking (opens, clicks, etc.)
+A full RFP edit lifecycle with approvals, versioning, etc.
+Focus on a solid, end-to-end single-user experience.
+What We’re Evaluating
+We will look at:
+●
+●
+●
+●
+●
+●
+Problem understanding & modeling – how you model RFPs, vendors, proposals, and their relationships
+Architecture & code quality – structure, separation of concerns, naming, error handling
+API & data design – clarity and consistency of your APIs and data models
+AI integration – how thoughtfully and effectively you use AI, not just “call an API”
+UX – can a user actually complete the workflow without confusion?
+Assumptions & reasoning – are your assumptions reasonable and clearly documented?
+4. Deliverables
+GitHub Repository
+●
+●
+Public repo with clear structure (e.g. 
+/frontend , 
+/backend ).
+.env.example listing all required environment variables (no secrets).
+README (Mandatory)
+Include at least:
+1.
+2.
+3.
+4.
+Project Setup
+a.
+b.
+c.
+d.
+e.
+Prerequisites (Node version, DB, API keys).
+Install steps (frontend & backend).
+How to configure email sending/receiving.
+How to run everything locally.
+Any seed data or initial scripts.
+Tech Stack
+a.
+Frontend, backend, DB, AI provider, email solution, and key libraries.
+API Documentation
+a.
+Main endpoints: method + path, request body/params, example success & error responses.
+Decisions & Assumptions
+a.
+b.
+Key design decisions (models, flows, scoring, etc.).
+Assumptions you made (about emails, formats, limitations, etc.).
+5.
+AI Tools Usage
+a.
+b.
+c.
+d.
+Which AI tools you used while building (Copilot, ChatGPT, Claude, Cursor, etc.).
+What they helped with (boilerplate, debugging, design, parsing ideas, etc.).
+Any notable prompts/approaches.
+What you learned or changed because of these tools.
+Demo Video (Mandatory)
+A 5–10 minute screen recording (Loom, Google Drive with public access) showing:
+1.
+2.
+3.
+4.
+5.
+Creating an RFP from natural language and seeing its structured form.
+Managing vendors and sending an RFP via email.
+Receiving at least one vendor response and automatic parsing into your system.
+Comparing multiple proposals and showing AI-assisted evaluation/recommendation.
+A short code walkthrough (structure, AI integration, email integration, anything you’re proud of).
+Submission
+●
+●
+●
+GitHub repo link
+Demo video link
+Any additional notes (known limitations, what you’d do next, etc.)
