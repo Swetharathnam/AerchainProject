@@ -71,3 +71,25 @@ export default defineConfig([
   },
 ])
 ```
+
+---
+
+# Aerchain RFP System - Frontend Information
+
+## Frontend Routes (Application Endpoints)
+
+| Route | Description |
+| :--- | :--- |
+| `/` | **Dashboard**: The main landing page displaying summary stats and lists of recent RFPs. |
+| `/rfps/new` | **Create RFP**: An interactive wizard to generate an RFP structure from natural language. |
+| `/rfps/:id` | **RFP Details**: Detailed view of a specific RFP, including status and vendor actions. |
+| `/compare/:rfp_id` | **Comparison**: A side-by-side view of vendor proposals with AI-generated analysis and recommendation. |
+
+## API Integration
+
+The frontend communicates with the FastAPI backend (typically at `http://localhost:8000`). Key API interactions include:
+
+- **Generate RFP Structure**: `POST /rfps/generate` - Sends user text to the backend AI service to get a structured JSON response.
+- **Create RFP**: `POST /rfps/` - Posts the final RFP data to be saved in the database.
+- **Submit Proposal**: `POST /proposals/` - Sends vendor response text to be analyzed by the AI.
+- **Compare Proposals**: `POST /proposals/compare/{id}` - Requests the backend to aggregate and analyze all proposals for a given RFP.

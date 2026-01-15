@@ -4,22 +4,30 @@ from database import get_session
 from models import Proposal, RFP, Vendor
 from services.ai_service import ai_service
 import json
+import logging
 
 router = APIRouter(prefix="/proposals", tags=["Proposals"])
+logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=Proposal)
 async def create_proposal(proposal: Proposal, session: Session = Depends(get_session)):
+    logger.info(f"Creating proposal for RFP ID: {proposal.rfp_id}, Vendor ID: {proposal.vendor_id}")
     # 1. Validate RFP and Vendor exist
     rfp = session.get(RFP, proposal.rfp_id)
     if not rfp:
+        logger.error(f"RFP not found: {proposal.rfp_id}")
         raise HTTPException(status_code=404, detail="RFP not found")
         
     vendor = session.get(Vendor, proposal.vendor_id)
     if not vendor:
+        logger.error(f"Vendor not found: {proposal.vendor_id}")
         raise HTTPException(status_code=404, detail="Vendor not found")
 
+
     # 2. Trigger AI Analysis
+    logger.info("Triggering AI analysis for proposal")
     analysis_result = await ai_service.analyze_proposal(rfp.description, proposal.raw_response)
+    logger.info(f"AI analysis completed with score: {analysis_result.get('score')}")
     
     # 3. Update Proposal with Analysis
     proposal.ai_score = analysis_result.get("score")
@@ -39,9 +47,11 @@ async def list_proposals_for_rfp(rfp_id: int, session: Session = Depends(get_ses
 
 @router.post("/compare/{rfp_id}")
 async def compare_proposals_endpoint(rfp_id: int, session: Session = Depends(get_session)):
+    logger.info(f"Starting proposal comparison for RFP ID: {rfp_id}")
     # 1. Fetch RFP
     rfp = session.get(RFP, rfp_id)
     if not rfp:
+        logger.error(f"RFP not found for comparison: {rfp_id}")
         raise HTTPException(status_code=404, detail="RFP not found")
         
     # 2. Fetch all proposals for this RFP
@@ -49,6 +59,7 @@ async def compare_proposals_endpoint(rfp_id: int, session: Session = Depends(get
     proposals = session.exec(statement).all()
     
     if not proposals:
+        logger.warning(f"No proposals found for RFP ID: {rfp_id}")
         raise HTTPException(status_code=400, detail="No proposals found for this RFP")
         
     # 3. Prepare data for AI
@@ -62,6 +73,8 @@ async def compare_proposals_endpoint(rfp_id: int, session: Session = Depends(get
         })
         
     # 4. Call AI Service
+    logger.info(f"Comparing {len(proposals_data)} proposals")
     comparison_result = await ai_service.compare_proposals(rfp.description, proposals_data)
+    logger.info("Comparison completed successfully")
     
     return comparison_result

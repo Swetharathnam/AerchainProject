@@ -5,6 +5,9 @@ import asyncio
 
 from typing import Dict, Any
 from config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AIService:
     def __init__(self):
@@ -76,7 +79,7 @@ class AIService:
 
                 loop = asyncio.get_event_loop()
                 raw_text = await loop.run_in_executor(None, generate_content)
-                print(f"DEBUG: AI response (attempt {attempt+1}): {raw_text[:100]}...")
+                logger.info(f"AI response (attempt {attempt+1}): {raw_text[:100]}...")
                 
                 # Extract JSON from the text
                 json_start = raw_text.find('{')
@@ -92,10 +95,10 @@ class AIService:
                 error_str = str(e)
                 if "429" in error_str and attempt < retry_count - 1:
                     wait_time = (attempt + 1) * 2
-                    print(f"Rate limit hit. Retrying in {wait_time}s...")
+                    logger.warning(f"Rate limit hit. Retrying in {wait_time}s...")
                     await asyncio.sleep(wait_time)
                 else:
-                    print(f"AI Extraction Error: {error_str}")
+                    logger.error(f"AI Extraction Error: {error_str}")
                     title_fallback = (natural_language_input[:40] + "...") if len(natural_language_input) > 40 else natural_language_input
                     return {
                         "title": f"[AI Error] {title_fallback}",
@@ -165,7 +168,7 @@ class AIService:
 
                 loop = asyncio.get_event_loop()
                 raw_text = await loop.run_in_executor(None, generate_content)
-                print(f"DEBUG: Proposal Analysis response (attempt {attempt+1}): {raw_text[:100]}...")
+                logger.info(f"Proposal Analysis response (attempt {attempt+1}): {raw_text[:100]}...")
                 
                 # Extract JSON from the text
                 json_start = raw_text.find('{')
@@ -181,10 +184,10 @@ class AIService:
                 error_str = str(e)
                 if "429" in error_str and attempt < retry_count - 1:
                     wait_time = (attempt + 1) * 2
-                    print(f"Rate limit hit in analysis. Retrying in {wait_time}s...")
+                    logger.warning(f"Rate limit hit in analysis. Retrying in {wait_time}s...")
                     await asyncio.sleep(wait_time)
                 else:
-                    print(f"AI Analysis Error: {error_str}")
+                    logger.error(f"AI Analysis Error: {error_str}")
                     return {
                         "score": 0,
                         "rationale": f"Analysis failed: {error_str}",
@@ -260,7 +263,7 @@ class AIService:
 
                 loop = asyncio.get_event_loop()
                 raw_text = await loop.run_in_executor(None, generate_content)
-                print(f"DEBUG: Comparison response (attempt {attempt+1}): {raw_text[:100]}...")
+                logger.info(f"Comparison response (attempt {attempt+1}): {raw_text[:100]}...")
                 
                 # Extract JSON from the text
                 json_start = raw_text.find('{')
@@ -276,10 +279,10 @@ class AIService:
                 error_str = str(e)
                 if "429" in error_str and attempt < retry_count - 1:
                     wait_time = (attempt + 1) * 2
-                    print(f"Rate limit hit in comparison. Retrying in {wait_time}s...")
+                    logger.warning(f"Rate limit hit in comparison. Retrying in {wait_time}s...")
                     await asyncio.sleep(wait_time)
                 else:
-                    print(f"AI Comparison Error: {error_str}")
+                    logger.error(f"AI Comparison Error: {error_str}")
                     return {
                         "recommendation": f"Comparison failed: {error_str}",
                         "comparison_matrix": [],

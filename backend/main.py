@@ -6,6 +6,14 @@ import os
 from contextlib import asynccontextmanager
 from database import create_db_and_tables
 from routers import rfps, vendors, proposals
+import logging
+
+# Configure Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
