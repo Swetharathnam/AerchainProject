@@ -7,6 +7,7 @@ The Aerchain RFP System is an intelligent Request for Proposal (RFP) management 
 Before starting, ensure you have the following installed:
 - **Python 3.10+** (for the backend)
 - **Node.js 18+** (for the frontend)
+- **PostgreSQL** (running locally or a connection string)
 - A **Google Gemini API Key** (get one from [Google AI Studio](https://aistudio.google.com/))
 
 ## Installation
@@ -34,10 +35,12 @@ pip install -r requirements.txt
 
 **Configuration**:
 1. Create a `.env` file in the `backend` directory.
-2. Add your Google API Key:
+2. Add your Google API Key and Database Connection String:
    ```
+   DATABASE_URL=postgresql://user:password@localhost:5432/aerchain_db
    GOOGLE_API_KEY=your_actual_api_key_here
    ```
+3. Ensure the database (`aerchain_db`) exists in your PostgreSQL server.
 
 ### 3. Frontend Setup
 Navigate to the frontend directory and install dependencies.
@@ -64,27 +67,27 @@ npm run dev
 ```
 The UI will be available at `http://localhost:5173`.
 
-## Tech Stack & Justification
+## Tech Stack
 
 ### Frontend
 - **Framework**: **React** with **Vite**
-    - *Justification*: Vite provides an extremely fast development server and build tool. React is used for its component-based architecture, making the UI modular and maintainable.
+    - Vite provides an extremely fast development server and build tool. React is used for its component-based architecture, making the UI modular and maintainable.
 - **Styling**: **TailwindCSS** & **shadcn/ui**
-    - *Justification*: Tailwind allows for rapid styling directly in markup. shadcn/ui provides high-quality, accessible, and customizable components (like Tabs, Cards, Dialogs) out of the box, ensuring a premium look and feel.
+    - Tailwind allows for rapid styling directly in markup. shadcn/ui provides high-quality, accessible, and customizable components (like Tabs, Cards, Dialogs) out of the box, ensuring a premium look and feel.
 - **State/Data**: React Hooks & Axios
-    - *Justification*: Simple and effective state management for the current scale of the application.
+    - Simple and effective state management for the current scale of the application.
 
 ### Backend
 - **Framework**: **FastAPI**
-    - *Justification*: A modern, fast (high-performance) web framework for building APIs with Python 3.6+ based on standard Python type hints. It offers automatic interactive API documentation (Swagger UI).
-- **Database**: **SQLModel** (SQLite)
-    - *Justification*: SQLModel combines SQLAlchemy and Pydantic, offering the power of a relational database with the ease of use of Pydantic models. SQLite is suitable for this standalone demonstration/MVP.
+    - A modern, fast (high-performance) web framework for building APIs with Python 3.6+ based on standard Python type hints. It offers automatic interactive API documentation (Swagger UI).
+- **Database**: **SQLModel** (PostgreSQL)
+    - SQLModel combines SQLAlchemy and Pydantic. PostgreSQL is selected for robust, production-grade relational data storage, suitable for scaling complex procurement data.
 - **Language**: Python 3.10+
 
 ### AI Integration
 - **Provider**: **Google Gemini (via `google-genai` SDK)**
 - **Model**: `gemini-2.5-flash-lite`
-    - *Justification*: A lightweight yet capable multimodal model that excels at text analysis, structured data extraction, and comparative reasoning, making it perfect for processing complex RFP documents and proposals.
+    - A lightweight yet capable multimodal model that excels at text analysis, structured data extraction, and comparative reasoning, making it perfect for processing complex RFP documents and proposals.
 
 ## Architecture
 
@@ -94,7 +97,7 @@ The application follows a modern client-server architecture:
 graph LR
     User[User] -->|Interacts| UI[React Frontend]
     UI -->|HTTP Requests| API[FastAPI Backend]
-    API -->|Queries| DB[(SQLite Database)]
+    API -->|Queries| DB[(PostgreSQL)]
     API -->|Prompts| AI[Gemini AI]
     AI -->|Analysis/Structure| API
 ```
@@ -102,7 +105,38 @@ graph LR
 1.  **Client**: The frontend handles user interactions (creating RFPs, viewing dashboards, comparing proposals).
 2.  **Server**: The backend exposes REST endpoints to manage resources (RFPs, Vendors, Proposals).
 3.  **AI Service**: A dedicated service layer interacts with the Gemini API to perform intelligence tasks.
-4.  **Persistence**: Data is stored in a local SQLite database file (`database.db`).
+4.  **Persistence**: Data is stored in a PostgreSQL database (configured via `DATABASE_URL`).
+
+
+## Project Structure
+
+```
+AerchainProject/
+├── backend/
+│   ├── routers/                # API Route Handlers
+│   │   ├── rfps.py             # RFP management endpoints
+│   │   ├── vendors.py          # Vendor management endpoints
+│   │   └── proposals.py        # Proposal submission & analysis
+│   ├── services/               # Business Logic & Integrations
+│   │   └── ai_service.py       # Google Gemini AI integration
+│   ├── models.py               # SQLModel Database Models
+│   ├── database.py             # DB Connection & Session
+│   ├── main.py                 # Application Entry Point
+│   ├── config.py               # Configuration Settings
+│   └── requirements.txt        # Python Dependencies
+├── frontend/
+│   ├── src/
+│   │   ├── components/         # React UI Components
+│   │   │   ├── rfp-dashboard.tsx   # Main dashboard view
+│   │   │   ├── rfp-form.tsx        # RFP creation wizard
+│   │   │   ├── proposal-comparison.tsx # AI comparison view
+│   │   │   └── ui/             # Reusable UI components (shadcn/ui)
+│   │   ├── lib/                # Utilities & Helpers
+│   │   ├── App.tsx             # Main App Component
+│   │   └── main.tsx            # Frontend Entry Point
+│   └── package.json            # Node.js Dependencies
+└── README.md                   # Project Documentation
+```
 
 ## Application Flow
 
