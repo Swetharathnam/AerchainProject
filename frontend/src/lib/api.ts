@@ -60,5 +60,10 @@ export const api = {
     listProposals: async (rfpId: number) => {
         const response = await axios.get<any[]>(`${API_URL}/proposals/rfp/${rfpId}`);
         return response.data;
+    },
+
+    compareProposals: async (rfpId: number) => {
+        const response = await axios.post(`${API_URL}/proposals/compare/${rfpId}`);
+        return response.data;
     }
 };

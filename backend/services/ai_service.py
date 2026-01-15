@@ -195,4 +195,97 @@ class AIService:
                     }
 
 
+
+    async def compare_proposals(self, rfp_context: str, proposals_list: list[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Compares multiple vendor proposals against the RFP.
+        Returns a comparative analysis and recommendation.
+        """
+        if not settings.GOOGLE_API_KEY:
+            return {
+                "recommendation": "AI Key missing. Demo mode.",
+                "comparison_matrix": [],
+                "best_vendor_id": None
+            }
+            
+        proposals_text = ""
+        for p in proposals_list:
+            proposals_text += f"\n--- VENDOR {p.get('vendor_name', 'Unknown')} (ID: {p.get('vendor_id')}) ---\n{p.get('proposal_text')}\n"
+
+        prompt = f"""
+        You are a procurement manager. Compare the following Vendor Proposals for the given RFP.
+        
+        RFP REQUIREMENTS:
+        {rfp_context}
+        
+        VENDOR PROPOSALS:
+        {proposals_text}
+        
+        Return ONLY a raw JSON object with:
+        - recommendation: A summary text explaining the best choice.
+        - best_vendor_id: The ID of the best vendor (integer).
+        - comparison_matrix: A list of objects, one for each vendor, containing:
+            - vendor_name: Name of vendor.
+            - score: 0-100 score.
+            - key_strengths: String summary of strengths.
+            - key_weaknesses: String summary of weaknesses.
+            - price_ranking: "Lowest", "Medium", "Highest" (if price is mentioned).
+        
+        JSON:
+        """
+        
+        retry_count = 3
+        
+        for attempt in range(retry_count):
+            try:
+                contents = [
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(text=prompt)]
+                    )
+                ]
+                
+                def generate_content():
+                    response_text = ""
+                    for chunk in self.client.models.generate_content_stream(
+                        model='gemini-2.5-flash-lite',
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            response_mime_type='application/json'
+                        )
+                    ):
+                        if hasattr(chunk, 'text') and chunk.text:
+                            response_text += chunk.text
+                    return response_text
+
+                loop = asyncio.get_event_loop()
+                raw_text = await loop.run_in_executor(None, generate_content)
+                print(f"DEBUG: Comparison response (attempt {attempt+1}): {raw_text[:100]}...")
+                
+                # Extract JSON from the text
+                json_start = raw_text.find('{')
+                json_end = raw_text.rfind('}') + 1
+                if json_start != -1 and json_end != 0:
+                    clean_json_text = raw_text[json_start:json_end]
+                else:
+                    clean_json_text = raw_text.strip()
+                
+                return json.loads(clean_json_text)
+
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str and attempt < retry_count - 1:
+                    wait_time = (attempt + 1) * 2
+                    print(f"Rate limit hit in comparison. Retrying in {wait_time}s...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    print(f"AI Comparison Error: {error_str}")
+                    return {
+                        "recommendation": f"Comparison failed: {error_str}",
+                        "comparison_matrix": [],
+                        "best_vendor_id": None
+                    }
+
 ai_service = AIService()
+
+
