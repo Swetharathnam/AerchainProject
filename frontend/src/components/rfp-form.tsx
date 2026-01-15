@@ -41,7 +41,7 @@ export function RFPForm() {
                 description: structuredData.description, // Use AI description or original input
                 budget: structuredData.budget,
                 currency: structuredData.currency,
-                structured_data: structuredData
+                structured_data: JSON.stringify(structuredData) // Convert to JSON string
             });
             alert("RFP Saved Successfully!");
             setStructuredData(null); // Reset
@@ -80,32 +80,58 @@ export function RFPForm() {
             </Card>
 
             {structuredData && (
-                <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-900/10">
+                <Card className={`border-2 ${structuredData.error ? 'border-amber-200 bg-amber-50/50' : 'border-green-200 bg-green-50/50'} dark:bg-opacity-10`}>
                     <CardHeader>
-                        <CardTitle>AI Suggested Structure</CardTitle>
-                        <CardDescription>Review the extracted details before saving.</CardDescription>
+                        <CardTitle className="flex justify-between items-center">
+                            AI Suggested Structure
+                            {structuredData.error && <span className="text-xs bg-amber-200 text-amber-800 px-2 py-1 rounded">AI Unavailable</span>}
+                        </CardTitle>
+                        <CardDescription>
+                            {structuredData.error
+                                ? "We couldn't reach the AI (Rate Limit). You can still edit and save manually below."
+                                : "Review the extracted details before saving."}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {structuredData.error && (
+                            <div className="p-3 bg-white border border-amber-200 rounded text-xs text-amber-700 font-mono mb-4">
+                                Error: {structuredData.error.includes("429") ? "Rate limit reached. Please wait a moment." : structuredData.error}
+                            </div>
+                        )}
                         <div className="grid gap-2">
                             <Label>Title</Label>
-                            <Input value={structuredData.title} readOnly />
+                            <Input
+                                value={structuredData.title}
+                                onChange={(e) => setStructuredData({ ...structuredData, title: e.target.value })}
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label>Summary Description</Label>
-                            <Textarea value={structuredData.description} readOnly />
+                            <Textarea
+                                value={structuredData.description}
+                                className="min-h-[100px]"
+                                onChange={(e) => setStructuredData({ ...structuredData, description: e.target.value })}
+                            />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
                                 <Label>Budget</Label>
-                                <Input value={structuredData.budget || "N/A"} readOnly />
+                                <Input
+                                    value={structuredData.budget || ""}
+                                    placeholder="N/A"
+                                    onChange={(e) => setStructuredData({ ...structuredData, budget: e.target.value })}
+                                />
                             </div>
                             <div className="grid gap-2">
                                 <Label>Currency</Label>
-                                <Input value={structuredData.currency || "USD"} readOnly />
+                                <Input
+                                    value={structuredData.currency || "USD"}
+                                    onChange={(e) => setStructuredData({ ...structuredData, currency: e.target.value })}
+                                />
                             </div>
                         </div>
 
-                        {structuredData.requirements && (
+                        {structuredData.requirements && structuredData.requirements.length > 0 && (
                             <div className="grid gap-2">
                                 <Label>Key Requirements</Label>
                                 <ul className="list-disc pl-5 text-sm">
@@ -117,8 +143,8 @@ export function RFPForm() {
                         )}
                     </CardContent>
                     <CardFooter>
-                        <Button onClick={handleSave} className="w-full bg-green-600 hover:bg-green-700">
-                            Confirm & Save RFP
+                        <Button onClick={handleSave} className={`w-full ${structuredData.error ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'}`}>
+                            {structuredData.error ? "Save Manual RFP" : "Confirm & Save RFP"}
                         </Button>
                     </CardFooter>
                 </Card>

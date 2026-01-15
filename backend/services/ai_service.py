@@ -1,14 +1,15 @@
 from google import genai
-import os
+from google.genai import types
 import json
-from typing import Dict, Any
+import asyncio
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+from typing import Dict, Any
+from config import settings
 
 class AIService:
     def __init__(self):
-        if GOOGLE_API_KEY:
-            self.client = genai.Client(api_key=GOOGLE_API_KEY)
+        if settings.GOOGLE_API_KEY:
+            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
         else:
             self.client = None
 
@@ -17,7 +18,7 @@ class AIService:
         Extracts structured RFP data from natural language text using Gemini.
         Returns a JSON object with title, description, budget, requirements, etc.
         """
-        if not GOOGLE_API_KEY:
+        if not settings.GOOGLE_API_KEY:
             # Fallback for dev if no key provided
             return {
                 "title": "Sample RFP (AI Disabled)",
@@ -49,29 +50,67 @@ class AIService:
         }}
         """
         
-        try:
-            response = self.client.models.generate_content(
-                model='gemini-1.5-flash',
-                contents=prompt
-            )
-            # Cleanup potential markdown ticks if Gemini adds them
-            clean_text = response.text.replace("```json", "").replace("```", "").strip()
-            return json.loads(clean_text)
-        except Exception as e:
-            print(f"AI Error: {e}")
-            # Fallback on error
-            return {
-                "title": "New RFP",
-                "description": natural_language_input,
-                "error": "Failed to generate structure"
-            }
+        retry_count = 3
+        
+        for attempt in range(retry_count):
+            try:
+                contents = [
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(text=prompt)]
+                    )
+                ]
+                
+                def generate_content():
+                    response_text = ""
+                    for chunk in self.client.models.generate_content_stream(
+                        model='gemini-2.5-flash-lite',
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            response_mime_type='application/json'
+                        )
+                    ):
+                        if hasattr(chunk, 'text') and chunk.text:
+                            response_text += chunk.text
+                    return response_text
+
+                loop = asyncio.get_event_loop()
+                raw_text = await loop.run_in_executor(None, generate_content)
+                print(f"DEBUG: AI response (attempt {attempt+1}): {raw_text[:100]}...")
+                
+                # Extract JSON from the text
+                json_start = raw_text.find('{')
+                json_end = raw_text.rfind('}') + 1
+                if json_start != -1 and json_end != 0:
+                    clean_json_text = raw_text[json_start:json_end]
+                else:
+                    clean_json_text = raw_text.strip()
+                
+                return json.loads(clean_json_text)
+
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str and attempt < retry_count - 1:
+                    wait_time = (attempt + 1) * 2
+                    print(f"Rate limit hit. Retrying in {wait_time}s...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    print(f"AI Extraction Error: {error_str}")
+                    title_fallback = (natural_language_input[:40] + "...") if len(natural_language_input) > 40 else natural_language_input
+                    return {
+                        "title": f"[AI Error] {title_fallback}",
+                        "description": f"AI extraction failed: {error_str}\n\nOriginal Text: {natural_language_input}",
+                        "budget": None,
+                        "currency": "USD",
+                        "error": error_str
+                    }
 
     async def analyze_proposal(self, rfp_context: str, proposal_text: str) -> Dict[str, Any]:
         """
         Analyzes a vendor proposal against the RFP context.
         Returns JSON with score, rationale, extracted specific values.
         """
-        if not GOOGLE_API_KEY:
+        if not settings.GOOGLE_API_KEY:
             return {
                 "score": 50,
                 "rationale": "AI Key missing. Demo mode.",
@@ -100,19 +139,60 @@ class AIService:
         JSON:
         """
         
-        try:
-            response = self.model.generate_content(prompt)
-            clean_text = response.text.replace("```json", "").replace("```", "").strip()
-            return json.loads(clean_text)
-        except Exception as e:
-            print(f"AI Error: {e}")
-            return {
-                "score": 0,
-                "rationale": f"Analysis failed: {str(e)}",
-                "extracted_price": 0,
-                "pros": [],
-                "cons": []
-            }
+        retry_count = 3
+        
+        for attempt in range(retry_count):
+            try:
+                contents = [
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(text=prompt)]
+                    )
+                ]
+                
+                def generate_content():
+                    response_text = ""
+                    for chunk in self.client.models.generate_content_stream(
+                        model='gemini-2.5-flash-lite',
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            response_mime_type='application/json'
+                        )
+                    ):
+                        if hasattr(chunk, 'text') and chunk.text:
+                            response_text += chunk.text
+                    return response_text
+
+                loop = asyncio.get_event_loop()
+                raw_text = await loop.run_in_executor(None, generate_content)
+                print(f"DEBUG: Proposal Analysis response (attempt {attempt+1}): {raw_text[:100]}...")
+                
+                # Extract JSON from the text
+                json_start = raw_text.find('{')
+                json_end = raw_text.rfind('}') + 1
+                if json_start != -1 and json_end != 0:
+                    clean_json_text = raw_text[json_start:json_end]
+                else:
+                    clean_json_text = raw_text.strip()
+                
+                return json.loads(clean_json_text)
+
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str and attempt < retry_count - 1:
+                    wait_time = (attempt + 1) * 2
+                    print(f"Rate limit hit in analysis. Retrying in {wait_time}s...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    print(f"AI Analysis Error: {error_str}")
+                    return {
+                        "score": 0,
+                        "rationale": f"Analysis failed: {error_str}",
+                        "extracted_price": 0,
+                        "pros": [],
+                        "cons": [],
+                        "error": error_str
+                    }
 
 
 ai_service = AIService()
